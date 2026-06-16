@@ -63,6 +63,9 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+grant select, update on public.profiles to authenticated;
+grant select on public.feature_flags to anon, authenticated;
+
 -- row level security
 alter table public.profiles      enable row level security;
 alter table public.feature_flags enable row level security;

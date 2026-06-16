@@ -15,7 +15,8 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:stop": "supabase stop",
-    "api:dev": "vercel dev --listen 3000",
+    "api:dev": "npx vercel dev --listen 3000",
+    "api:local": "node scripts/local-api.mjs",
     "test:e2e": "maestro test .maestro/login_flow.yaml"
   },
   "dependencies": {
