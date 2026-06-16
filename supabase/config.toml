@@ -1,0 +1,32 @@
+# supabase/config.toml
+# Minimal config consumed by `supabase start`. Everything the local stack needs
+# lives here as code — no dashboard clicking required.
+project_id = "config-flags-app"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+# Local dev: allow email/password sign-in without an email round-trip.
+enable_signup = true
+
+[auth.email]
+enable_confirmations = false
+
+# `supabase db reset` runs every migration, then this seed file.
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]

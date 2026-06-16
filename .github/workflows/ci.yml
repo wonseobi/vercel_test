@@ -1,0 +1,44 @@
+# .github/workflows/ci.yml
+# ---------------------------------------------------------------------------
+# Staging workflow. The `staging` branch is the integration target: every push
+# / PR spins up the local Supabase stack from code, applies migrations + seed,
+# and type-checks the app. Promotion to production is a fast-forward merge of
+# `staging` -> `main`. No cloud resources are provisioned — everything runs in
+# the runner exactly as it does on a developer machine.
+# ---------------------------------------------------------------------------
+name: CI
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+    branches: [staging, main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Start local Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase start
+
+      - name: Apply migrations + seed (verifies schema & RLS load cleanly)
+        run: supabase db reset --no-confirm
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop

@@ -1,0 +1,46 @@
+# .maestro/login_flow.yaml
+# ---------------------------------------------------------------------------
+# E2E UI automation (Maestro). Launches the app, signs in as the PREMIUM user,
+# and asserts the UI updated based on backend configuration:
+#   * a premium-tier flag IS visible   (premium_analytics)
+#   * a beta-tier flag is NOT visible  (beta_ai_assistant)
+# This proves the tier-based RLS gating is reflected end-to-end in the client.
+#
+# Run with:  maestro test .maestro/login_flow.yaml
+# Prereqs:   supabase running, `vercel dev` running, app built for staging.
+# ---------------------------------------------------------------------------
+appId: com.example.configflags.staging
+---
+- launchApp:
+    clearState: true
+
+# --- Login screen renders with the active environment badge ---------------
+- assertVisible:
+    id: "env-badge"
+- assertVisible: "Config Flags"
+
+# --- Sign in as the premium user ------------------------------------------
+- tapOn:
+    id: "email-input"
+- inputText: "premium@example.com"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- tapOn:
+    id: "login-button"
+
+# --- Flags screen loads ----------------------------------------------------
+- assertVisible:
+    id: "flags-list"
+
+# --- UI reflects backend config: premium flag present, beta flag absent ----
+- assertVisible:
+    id: "flag-premium_analytics"
+- assertNotVisible:
+    id: "flag-beta_ai_assistant"
+
+# --- Session persists across restart --------------------------------------
+- launchApp:
+    clearState: false
+- assertVisible:
+    id: "flags-list"

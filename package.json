@@ -1,0 +1,36 @@
+{
+  "name": "config-flags-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lightweight RN app that securely displays environment-specific feature flags based on account status.",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "APP_ENV=staging expo start",
+    "start:staging": "APP_ENV=staging expo start",
+    "start:production": "APP_ENV=production expo start",
+    "android:staging": "APP_ENV=staging expo run:android",
+    "android:production": "APP_ENV=production expo run:android",
+    "ios:staging": "APP_ENV=staging expo run:ios",
+    "ios:production": "APP_ENV=production expo run:ios",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:stop": "supabase stop",
+    "api:dev": "vercel dev --listen 3000",
+    "test:e2e": "maestro test .maestro/login_flow.yaml"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "expo": "~51.0.0",
+    "expo-constants": "~16.0.0",
+    "expo-secure-store": "~13.0.0",
+    "expo-status-bar": "~1.12.0",
+    "react": "18.2.0",
+    "react-native": "0.74.5",
+    "react-native-url-polyfill": "^2.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@types/react": "~18.2.79",
+    "typescript": "~5.3.3"
+  }
+}
