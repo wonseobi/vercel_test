@@ -1,9 +1,3 @@
-// App.tsx
-// ---------------------------------------------------------------------------
-// Root component. Owns the single piece of global state that matters here:
-// "is there a session?". Supabase restores the session from secure storage on
-// launch, so a returning user lands straight on the flags screen — no re-login.
-// ---------------------------------------------------------------------------
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -17,13 +11,11 @@ export default function App() {
   const [restoring, setRestoring] = useState(true);
 
   useEffect(() => {
-    // Restore any persisted (secure) session on cold start.
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setRestoring(false);
     });
 
-    // React to sign-in / sign-out / token refresh.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
     });

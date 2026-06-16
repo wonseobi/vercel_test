@@ -1,9 +1,3 @@
-// src/lib/config.ts
-// ---------------------------------------------------------------------------
-// Reads the environment block that app.config.js baked into the build.
-// Nothing in the app talks to a hard-coded URL — everything flows through here,
-// so flipping APP_ENV=staging <-> production swaps the ENTIRE backend target.
-// ---------------------------------------------------------------------------
 import Constants from 'expo-constants';
 
 type AppEnv = 'staging' | 'production';

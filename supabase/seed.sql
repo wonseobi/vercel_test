@@ -1,13 +1,5 @@
--- supabase/seed.sql
--- ===========================================================================
--- Deterministic seed data. Runs after migrations on `supabase db reset`.
--- Creates three test users (one per tier) and a catalog of feature flags so
--- the tier-based visibility rule is demonstrable end-to-end.
---
--- Login credentials for all seeded users:  password123
--- ===========================================================================
+-- test users login with password: password123
 
--- Helper: create a fully confirmed email/password user that can log in locally.
 create or replace function public._seed_user(p_email text, p_password text)
 returns uuid
 language plpgsql
@@ -40,7 +32,6 @@ begin
 end;
 $$;
 
--- --- Users (the handle_new_user trigger auto-creates their profiles) --------
 do $$
 declare
   free_id    uuid := public._seed_user('free@example.com',    'password123');
@@ -52,16 +43,13 @@ begin
   update public.profiles set account_tier = 'beta'    where id = beta_id;
 end $$;
 
--- --- Feature flags ----------------------------------------------------------
--- required_tier gates visibility; environment scopes a flag to staging/prod.
 insert into public.feature_flags (key, name, description, enabled, required_tier, environment) values
-  ('new_onboarding',    'New Onboarding',        'Redesigned first-run experience.',          true,  'free',    'all'),
-  ('dark_mode',         'Dark Mode',             'System-wide dark theme.',                   true,  'free',    'all'),
-  ('premium_analytics', 'Premium Analytics',     'Advanced usage dashboards.',                true,  'premium', 'all'),
-  ('priority_support',  'Priority Support',      'Front-of-queue support routing.',           false, 'premium', 'all'),
-  ('beta_ai_assistant', 'Beta AI Assistant',     'Experimental in-app AI helper.',            true,  'beta',    'all'),
-  ('beta_new_editor',   'Beta Editor',           'Next-gen editor, staging only.',            true,  'beta',    'staging'),
-  ('prod_rollout_demo', 'Production Rollout',    'Flag that only exists in production.',      true,  'free',    'production');
+  ('new_onboarding',    'New Onboarding',     'Redesigned first-run experience.',     true,  'free',    'all'),
+  ('dark_mode',         'Dark Mode',          'System-wide dark theme.',              true,  'free',    'all'),
+  ('premium_analytics', 'Premium Analytics',  'Advanced usage dashboards.',           true,  'premium', 'all'),
+  ('priority_support',  'Priority Support',   'Front-of-queue support routing.',      false, 'premium', 'all'),
+  ('beta_ai_assistant', 'Beta AI Assistant',  'Experimental in-app AI helper.',       true,  'beta',    'all'),
+  ('beta_new_editor',   'Beta Editor',        'Next-gen editor, staging only.',       true,  'beta',    'staging'),
+  ('prod_rollout_demo', 'Production Rollout', 'Flag that only exists in production.', true,  'free',    'production');
 
--- Clean up the helper so it isn't left lying around in the DB.
 drop function public._seed_user(text, text);
