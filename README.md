@@ -1,78 +1,89 @@
-# Config Flags — Backend & Mobile Architecture Challenge
+# Config Flags
 
-A lightweight **React Native (Expo)** app that securely displays
-**environment-specific feature flags** based on a user's account tier. The
-backend is **local-only**: a Supabase Postgres instance (via the Supabase CLI)
-fronted by a **Vercel Edge function**. All schema, policies, and environment
-flows live in this repo as code — nothing is provisioned in the cloud.
+Small React Native (Expo) app that shows feature flags based on what tier a
+user's account is on. Everything runs locally — Supabase through the CLI and a
+Vercel function in front of it. No cloud stuff to set up, it's all in the repo.
+
+The basic idea: the app logs in, hits the API with the user's token, and the
+database decides which flags come back. A free user doesn't even see the premium
+flags exist — that's enforced in Postgres with row level security, not in the
+app code.
 
 ```
-┌──────────────┐   Bearer JWT    ┌───────────────────┐   RLS as user   ┌──────────────┐
-│  Expo app    │ ───────────────▶│  Vercel Edge fn   │ ───────────────▶│  Supabase    │
-│ (staging|prod)│   GET /api/flags│  api/flags.ts     │   anon + token  │  Postgres    │
-└──────────────┘ ◀─────────────── └───────────────────┘ ◀─────────────── └──────────────┘
-   secure session       only entitled flags          RLS gates every row
+app  ->  /api/flags (vercel)  ->  supabase
+         forwards the JWT          RLS filters rows by tier
 ```
 
-## How each requirement is met
+## Stack
 
-| PDF deliverable | Implementation |
-|---|---|
-| Local Supabase, schema as code | [`supabase/config.toml`](supabase/config.toml), [`supabase/migrations/`](supabase/migrations) |
-| Profiles + Feature Flags, premium/beta gating | `profiles.account_tier`, `feature_flags.required_tier`, `tier_rank()` |
-| DB-level security, reject unauthorized read/write | Row Level Security policies in the migration |
-| Local Vercel API serving configs | [`api/flags.ts`](api/flags.ts) (Edge runtime) |
-| Staging vs Production toggle | [`app.config.js`](app.config.js) + [`src/lib/config.ts`](src/lib/config.ts) |
-| Secure session across restarts | `expo-secure-store` adapter in [`src/lib/supabase.ts`](src/lib/supabase.ts) |
-| E2E UI automation | [`.maestro/login_flow.yaml`](.maestro/login_flow.yaml) |
-| Staging workflow | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on the `staging` branch |
+- Expo / React Native for the app
+- Supabase local (Postgres + auth) via the CLI
+- A Vercel edge function as the API gateway
+- Maestro for the e2e test
 
-## Prerequisites
+## Running it locally
+
+You need Docker running first (Supabase spins up containers).
 
 ```bash
-npm i -g supabase vercel    # CLIs (or use npx)
-brew install maestro        # E2E runner
-```
-
-## Run it locally
-
-```bash
-# 1. Install app deps
 npm install
 
-# 2. Bring up Postgres + apply migrations + seed (creates 3 test users + flags)
+# database
 npm run db:start
-npm run db:reset
+npm run db:reset      # runs migrations + seed
 
-# 3. Serve the API (reads .env — copy from .env.example first)
+# api  (separate terminal)
 cp .env.example .env
-npm run api:dev          # vercel dev on :3000
+npm run api:local     # http://localhost:3000
 
-# 4. Run the app for an environment
-npm run start:staging    # or: npm run start:production
+# app  (another terminal)
+npm run start:device  # for a real phone over Expo Go
+# or: npm run start:staging  and use a simulator
 ```
 
-### Seeded test users (password: `password123`)
+`api:local` is just a small node server that runs the same code as the Vercel
+function without needing to log into Vercel. `npm run api:dev` is the real
+`vercel dev` if you'd rather use that.
 
-| Email | Tier | Sees |
-|---|---|---|
-| `free@example.com` | free | free flags only |
-| `premium@example.com` | premium | free + premium flags |
-| `beta@example.com` | beta | all flags |
+### Test logins
 
-## E2E test
+All three use the password `password123`:
+
+- `free@example.com` — sees free flags only
+- `premium@example.com` — free + premium
+- `beta@example.com` — everything
+
+Log in as one, then another, and watch the list change. That's the whole point.
+
+## Where things live
+
+- `supabase/migrations/` — tables, the tier ranking, and the RLS policies
+- `supabase/seed.sql` — the 3 users + the flags
+- `api/flags.ts` — the function that serves flags (forwards the user token so
+  RLS runs as that user)
+- `src/lib/config.ts` + `app.config.js` — staging vs production switching
+- `src/lib/supabase.ts` — supabase client, session kept in expo-secure-store so
+  it survives restarts
+- `.maestro/login_flow.yaml` — e2e test (logs in, checks the right flags show)
+
+## Environments
+
+`APP_ENV` decides which backend the app points at. `npm run start:production`
+swaps the whole config block. Locally they hit the same Supabase instance but
+the flags are tagged per environment, so e.g. the production-only flag doesn't
+show up in staging.
+
+## Staging / prod branches
+
+`staging` is where I work. CI on that branch stands the DB up from scratch and
+typechecks. `main` is the production line — promote by merging staging in.
+
+## E2E
 
 ```bash
-npm run test:e2e        # maestro test .maestro/login_flow.yaml
+npm run test:e2e
 ```
 
-Logs in as the premium user and asserts the premium flag renders while the
-beta-only flag does not — i.e. the database's RLS decision is reflected in the
-UI. Also relaunches without clearing state to prove the session persists.
-
-## Promotion workflow
-
-`staging` is the integration branch (CI runs the full DB reset + type-check).
-Promote to production by fast-forwarding `staging → main`.
-
-See [`SCRIPT.md`](SCRIPT.md) for a guided walkthrough of the code.
+Needs a simulator running with the app installed. It logs in as the premium
+user, checks the premium flag is there and the beta one isn't, then relaunches
+to make sure the session stuck around.
